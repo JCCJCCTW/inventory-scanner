@@ -526,6 +526,7 @@
         saving: false,
         scannerOpen: false,
         scannerRunning: false,
+        scannerTransitioning: false,
         scannerInstance: null,
         sheetName: '',
         lastScannedCode: '',
@@ -872,6 +873,16 @@
       }
 
       async function startScanner() {
+        if (state.scannerTransitioning) {
+          setStatus('掃描器正在切換狀態，請稍候。', 'warning', '切換中');
+          return;
+        }
+
+        if (state.scannerRunning) {
+          setStatus('掃描器已啟動，請直接對準條碼。', 'info', '掃描中');
+          return;
+        }
+
         if (!state.apiUrl) {
           setStatus('請先連線 API，再開啟即時掃描。', 'warning', '未連線');
           return;
@@ -883,6 +894,11 @@
         }
 
         try {
+          state.scannerTransitioning = true;
+          dom.scanToggle.disabled = true;
+          dom.stopButton.disabled = true;
+          dom.scanToggle.textContent = '啟動中...';
+
           if (!state.scannerInstance) {
             state.scannerInstance = new Html5Qrcode('reader');
           }
@@ -911,32 +927,52 @@
           dom.scannerShell.classList.add('is-active');
           dom.scannerStatus.textContent = '掃描中';
           dom.scannerStatus.className = 'status-badge tone-success';
+          dom.scanToggle.textContent = '掃描進行中';
           setStatus('相機已啟動，請將條碼置中。', 'info', '掃描中');
         } catch (error) {
           setStatus(explainScannerError(error), 'error', '掃描失敗');
           dom.scannerStatus.textContent = '掃描失敗';
           dom.scannerStatus.className = 'status-badge tone-error';
+          dom.scanToggle.textContent = '開啟即時掃描';
+        } finally {
+          state.scannerTransitioning = false;
+          dom.scanToggle.disabled = false;
+          dom.stopButton.disabled = false;
         }
       }
 
       async function stopScanner() {
+        if (state.scannerTransitioning) {
+          return;
+        }
+
         if (!state.scannerInstance || !state.scannerRunning) {
           dom.scannerShell.classList.remove('is-active');
           dom.scannerStatus.textContent = '待命中';
           dom.scannerStatus.className = 'status-badge tone-info';
+          dom.scanToggle.textContent = '開啟即時掃描';
           return;
         }
 
         try {
+          state.scannerTransitioning = true;
+          dom.scanToggle.disabled = true;
+          dom.stopButton.disabled = true;
+          dom.stopButton.textContent = '關閉中...';
           await state.scannerInstance.stop();
         } catch (error) {
           // ignore stop errors from fast toggles
         } finally {
           state.scannerOpen = false;
           state.scannerRunning = false;
+          state.scannerTransitioning = false;
           dom.scannerShell.classList.remove('is-active');
           dom.scannerStatus.textContent = '待命中';
           dom.scannerStatus.className = 'status-badge tone-info';
+          dom.scanToggle.textContent = '開啟即時掃描';
+          dom.scanToggle.disabled = false;
+          dom.stopButton.disabled = false;
+          dom.stopButton.textContent = '關閉掃描';
         }
       }
 
@@ -954,6 +990,7 @@
 
         state.lastScannedCode = barcode;
         state.lastScanAt = now;
+        stopScanner();
         lookupBarcode(barcode, 'scan');
       }
 
