@@ -23,9 +23,9 @@
     ></script>
     <style>
       :root {
-        --bg: #f5efe4;
-        --surface: rgba(255, 250, 242, 0.88);
-        --surface-strong: rgba(255, 248, 237, 0.96);
+        --bg: #f4eee4;
+        --surface: rgba(255, 249, 241, 0.92);
+        --surface-strong: rgba(255, 248, 237, 0.98);
         --ink: #13212f;
         --muted: #5b6a79;
         --line: rgba(19, 33, 47, 0.1);
@@ -34,8 +34,8 @@
         --success: #1f8f66;
         --warning: #bf7c17;
         --error: #bf394d;
-        --scanner: #11181f;
-        --shadow: 0 18px 60px rgba(19, 33, 47, 0.14);
+        --scanner: #0e141b;
+        --shadow: 0 20px 60px rgba(19, 33, 47, 0.15);
         --radius-xl: 28px;
         --radius-lg: 22px;
         --radius-md: 18px;
@@ -78,11 +78,9 @@
       .app-frame {
         width: min(100%, 540px);
         margin: 0 auto;
-        display: grid;
-        gap: 16px;
       }
 
-      .panel {
+      .main-card {
         padding: 18px;
         border-radius: var(--radius-xl);
         background:
@@ -92,8 +90,58 @@
         border: 1px solid rgba(255, 255, 255, 0.48);
       }
 
+      .topbar {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+
+      .primary-button,
+      .save-button,
+      .stepper-button,
+      .ghost-button {
+        border: 0;
+        border-radius: var(--radius-md);
+        font-weight: 800;
+        cursor: pointer;
+        transition: transform 140ms ease, opacity 140ms ease, box-shadow 140ms ease;
+      }
+
+      .primary-button,
+      .save-button {
+        min-height: 60px;
+        padding: 0 18px;
+        font-size: 1rem;
+      }
+
+      .primary-button {
+        background: linear-gradient(135deg, #152130 0%, #24354d 100%);
+        color: #fff8ef;
+        box-shadow: 0 18px 28px rgba(21, 33, 48, 0.24);
+      }
+
+      .save-button {
+        background: linear-gradient(135deg, #ff8a4c 0%, #ee6c3b 100%);
+        color: #fff8ef;
+        box-shadow: 0 18px 28px rgba(238, 108, 59, 0.28);
+      }
+
+      .primary-button:disabled,
+      .save-button:disabled {
+        opacity: 0.42;
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+
+      .brand-row {
+        display: grid;
+        gap: 6px;
+        margin-bottom: 16px;
+      }
+
       .eyebrow {
-        margin: 0 0 6px;
+        margin: 0;
         color: var(--accent-dark);
         font-size: 0.75rem;
         font-weight: 800;
@@ -102,7 +150,6 @@
       }
 
       h1,
-      h2,
       p {
         margin: 0;
       }
@@ -114,19 +161,15 @@
       }
 
       .subcopy,
-      .panel-copy {
+      .status-line,
+      .timestamp-line {
         color: var(--muted);
         line-height: 1.55;
-      }
-
-      .panel-copy {
-        font-size: 0.84rem;
       }
 
       .field-stack {
         display: grid;
         gap: 14px;
-        margin-top: 16px;
       }
 
       .field {
@@ -139,8 +182,8 @@
         align-items: center;
         justify-content: space-between;
         gap: 10px;
-        font-size: 0.9rem;
-        font-weight: 700;
+        font-size: 0.92rem;
+        font-weight: 800;
       }
 
       .field-hint {
@@ -181,17 +224,6 @@
         align-items: center;
       }
 
-      .stepper-button,
-      .primary-button,
-      .secondary-button,
-      .save-button {
-        border: 0;
-        border-radius: var(--radius-md);
-        font-weight: 800;
-        cursor: pointer;
-        transition: transform 140ms ease, opacity 140ms ease, box-shadow 140ms ease;
-      }
-
       .stepper-button {
         min-height: 64px;
         background: #162130;
@@ -208,104 +240,98 @@
         font-weight: 800;
       }
 
-      .action-row,
-      .scanner-actions {
+      .status-strip {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
+        gap: 8px;
+        margin-top: 16px;
+        padding: 14px 16px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.68);
       }
 
-      .primary-button,
-      .secondary-button,
-      .save-button {
-        min-height: 62px;
-        padding: 0 18px;
-        font-size: 1rem;
-      }
-
-      .primary-button {
-        background: linear-gradient(135deg, #152130 0%, #24354d 100%);
-        color: #fff8ef;
-        box-shadow: 0 18px 28px rgba(21, 33, 48, 0.24);
-      }
-
-      .save-button {
-        background: linear-gradient(135deg, #ff8a4c 0%, #ee6c3b 100%);
-        color: #fff8ef;
-        box-shadow: 0 18px 28px rgba(238, 108, 59, 0.28);
-      }
-
-      .secondary-button {
-        background: rgba(255, 255, 255, 0.72);
-        color: var(--ink);
-        box-shadow: inset 0 0 0 1px var(--line);
-      }
-
-      .save-button:disabled {
-        opacity: 0.42;
-        cursor: not-allowed;
-        box-shadow: none;
-      }
-
-      .dirty-indicator {
-        margin-top: 12px;
-        padding: 12px 14px;
-        border-radius: 16px;
-        background: rgba(255, 255, 255, 0.72);
-        color: var(--muted);
-        font-size: 0.84rem;
+      .status-line {
+        font-size: 0.92rem;
         font-weight: 700;
       }
 
-      .panel-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        margin-bottom: 14px;
-      }
-
-      .panel-title {
-        font-size: 1rem;
-        font-weight: 800;
-        letter-spacing: -0.02em;
-      }
-
-      .status-badge {
-        padding: 7px 11px;
-        border-radius: 999px;
-        font-size: 0.78rem;
-        font-weight: 800;
-        white-space: nowrap;
-      }
-
-      .tone-info {
-        background: rgba(19, 33, 47, 0.08);
-        color: #233245;
-      }
-
-      .tone-success {
-        background: rgba(31, 143, 102, 0.14);
+      .status-line[data-tone='success'] {
         color: var(--success);
       }
 
-      .tone-warning {
-        background: rgba(191, 124, 23, 0.14);
+      .status-line[data-tone='warning'] {
         color: var(--warning);
       }
 
-      .tone-error {
-        background: rgba(191, 57, 77, 0.14);
+      .status-line[data-tone='error'] {
         color: var(--error);
+      }
+
+      .timestamp-line {
+        font-size: 0.82rem;
+        font-weight: 700;
+      }
+
+      .scanner-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: grid;
+        place-items: center;
+        padding:
+          max(18px, env(safe-area-inset-top))
+          16px
+          max(24px, env(safe-area-inset-bottom))
+          16px;
+        background: rgba(14, 20, 27, 0.78);
+        backdrop-filter: blur(10px);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 180ms ease;
+      }
+
+      .scanner-modal.is-open {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .scanner-dialog {
+        width: min(100%, 540px);
+        padding: 18px;
+        border-radius: 28px;
+        background:
+          linear-gradient(180deg, rgba(19, 33, 47, 0.96), rgba(8, 12, 18, 0.96));
+        box-shadow: 0 30px 70px rgba(0, 0, 0, 0.36);
+        color: #fff8ef;
+      }
+
+      .scanner-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+
+      .scanner-title {
+        font-size: 1rem;
+        font-weight: 800;
+      }
+
+      .ghost-button {
+        min-height: 46px;
+        padding: 0 16px;
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff8ef;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
       }
 
       .scanner-shell {
         position: relative;
         overflow: hidden;
-        min-height: 280px;
+        min-height: 320px;
         border-radius: 24px;
         background:
-          linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.1)),
+          linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.12)),
           var(--scanner);
       }
 
@@ -338,12 +364,19 @@
 
       @keyframes scanline {
         0% { transform: translateY(0); }
-        50% { transform: translateY(132px); }
+        50% { transform: translateY(160px); }
         100% { transform: translateY(0); }
       }
 
       #reader {
-        min-height: 280px;
+        min-height: 320px;
+      }
+
+      #reader video {
+        width: 100%;
+        min-height: 320px;
+        object-fit: cover;
+        border-radius: 24px;
       }
 
       .scanner-placeholder {
@@ -363,47 +396,16 @@
         opacity: 0;
       }
 
-      .meta-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-      }
-
-      .meta-tile {
-        padding: 14px;
-        border-radius: 18px;
-        background: rgba(255, 255, 255, 0.58);
-      }
-
-      .meta-label {
-        display: block;
-        margin-bottom: 6px;
-        color: var(--muted);
-        font-size: 0.76rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-      }
-
-      .meta-value {
-        font-size: 1rem;
-        font-weight: 800;
-        line-height: 1.4;
-        word-break: break-word;
-      }
-
-      .settings-copy {
-        margin-top: 10px;
-        color: var(--muted);
-        font-size: 0.82rem;
-        line-height: 1.55;
+      .scanner-note {
+        margin-top: 12px;
+        color: rgba(255, 248, 239, 0.78);
+        font-size: 0.84rem;
+        line-height: 1.6;
       }
 
       @media (max-width: 390px) {
-        .action-row,
-        .scanner-actions,
-        .meta-grid {
-          grid-template-columns: 1fr;
+        .topbar {
+          grid-template-columns: 1fr 1fr;
         }
       }
     </style>
@@ -411,47 +413,43 @@
   <body>
     <div class="app-shell">
       <div class="app-frame">
-        <section class="panel">
-          <p class="eyebrow">Hosted Scanner Frontend</p>
-          <h1>掃碼進出庫存管理</h1>
-          <p class="subcopy">
-            這個版本要部署在 HTTPS 靜態主機上，Google Apps Script 只負責資料 API，避免 iPhone Safari 的 iframe 相機限制。
-          </p>
+        <section class="main-card">
+          <div class="topbar">
+            <button id="scanButton" class="primary-button" type="button" disabled>開啟掃描</button>
+            <button id="saveButton" class="save-button" type="button" disabled>儲存變更</button>
+          </div>
+
+          <div class="brand-row">
+            <p class="eyebrow">Live Inventory Capture</p>
+            <h1>掃碼進出庫存管理</h1>
+            <p class="subcopy">開頁後會自動連線 Google Sheets API。連線完成前，掃描按鈕會維持鎖定。</p>
+          </div>
 
           <div class="field-stack">
             <label class="field">
-              <span class="field-label">GAS Web App URL</span>
-              <input
-                id="apiUrl"
-                class="text-input"
-                type="url"
-                autocomplete="off"
-                placeholder="貼上你的 GAS 網頁應用程式網址"
-              />
-            </label>
-          </div>
-
-          <div class="action-row" style="margin-top: 14px;">
-            <button id="connectButton" class="secondary-button" type="button">連線 API</button>
-            <button id="scanToggle" class="primary-button" type="button">開啟即時掃描</button>
-          </div>
-
-          <div id="dirtyIndicator" class="dirty-indicator">請先貼上 GAS Web App URL 並連線。</div>
-        </section>
-
-        <section class="panel">
-          <div class="field-stack" style="margin-top: 0;">
-            <label class="field">
               <span class="field-label">商品名稱</span>
-              <input id="productName" class="text-input" type="text" autocomplete="off" placeholder="輸入商品名稱" />
+              <input
+                id="productName"
+                class="text-input"
+                type="text"
+                autocomplete="off"
+                placeholder="輸入商品名稱"
+              />
             </label>
 
             <div class="field">
               <span class="field-label">庫存數量</span>
               <div class="quantity-panel">
-                <button id="minusButton" class="stepper-button" type="button">−</button>
-                <input id="quantity" class="quantity-input" type="number" min="0" inputmode="numeric" placeholder="0" />
-                <button id="plusButton" class="stepper-button" type="button">+</button>
+                <button id="minusButton" class="stepper-button" type="button" aria-label="減少數量">−</button>
+                <input
+                  id="quantity"
+                  class="quantity-input"
+                  type="number"
+                  min="0"
+                  inputmode="numeric"
+                  placeholder="0"
+                />
+                <button id="plusButton" class="stepper-button" type="button" aria-label="增加數量">+</button>
               </div>
             </div>
 
@@ -460,139 +458,113 @@
                 <span>條碼 Barcode</span>
                 <span class="field-hint">手動輸入後按 Enter 可即時比對</span>
               </span>
-              <input id="barcode" class="text-input" type="text" autocomplete="off" inputmode="numeric" placeholder="掃描結果會顯示在這裡" />
+              <input
+                id="barcode"
+                class="text-input"
+                type="text"
+                autocomplete="off"
+                inputmode="numeric"
+                placeholder="掃描結果會顯示在這裡"
+              />
             </label>
           </div>
 
-          <div class="action-row" style="margin-top: 14px;">
-            <button id="saveButton" class="save-button" type="button" disabled>儲存變更</button>
-            <button id="stopButton" class="secondary-button" type="button">關閉掃描</button>
+          <div class="status-strip">
+            <p id="statusMessage" class="status-line" data-tone="info">正在連線資料來源...</p>
+            <p id="timestampValue" class="timestamp-line">最後時間戳：未記錄</p>
           </div>
-        </section>
-
-        <section class="panel">
-          <div class="panel-header">
-            <div>
-              <h2 class="panel-title">即時掃描區</h2>
-              <p class="panel-copy">這一頁必須用 HTTPS 靜態主機開啟，才能讓 iPhone Safari 使用持續相機串流。</p>
-            </div>
-            <div id="scannerStatus" class="status-badge tone-info">待命中</div>
-          </div>
-          <div id="scannerShell" class="scanner-shell">
-            <div id="reader"></div>
-            <div class="scanner-placeholder">
-              先點「連線 API」，再點「開啟即時掃描」。
-            </div>
-          </div>
-        </section>
-
-        <section class="panel">
-          <div class="panel-header">
-            <div>
-              <h2 class="panel-title">資料狀態</h2>
-              <p class="panel-copy">查詢與寫回都走 Google Apps Script API。</p>
-            </div>
-            <div id="statusBadge" class="status-badge tone-info">尚未連線</div>
-          </div>
-
-          <div class="meta-grid">
-            <div class="meta-tile">
-              <span class="meta-label">目前狀態</span>
-              <p id="statusMessage" class="meta-value">請先輸入 Web App URL。</p>
-            </div>
-            <div class="meta-tile">
-              <span class="meta-label">最後時間戳</span>
-              <p id="timestampValue" class="meta-value">未記錄</p>
-            </div>
-            <div class="meta-tile">
-              <span class="meta-label">資料模式</span>
-              <p id="modeValue" class="meta-value">待命</p>
-            </div>
-            <div class="meta-tile">
-              <span class="meta-label">試算表工作表</span>
-              <p id="sheetValue" class="meta-value">尚未連線</p>
-            </div>
-          </div>
-
-          <p class="settings-copy">
-            這個頁面會把 API 網址記在本機瀏覽器，下次打開不必重填。
-          </p>
         </section>
       </div>
     </div>
 
+    <div id="scannerModal" class="scanner-modal" aria-hidden="true">
+      <div class="scanner-dialog" role="dialog" aria-modal="true" aria-labelledby="scannerTitle">
+        <div class="scanner-head">
+          <div>
+            <p class="scanner-title" id="scannerTitle">即時掃描</p>
+          </div>
+          <button id="closeScannerButton" class="ghost-button" type="button">關閉</button>
+        </div>
+
+        <div id="scannerShell" class="scanner-shell">
+          <div id="reader"></div>
+          <div class="scanner-placeholder">啟動後請將條碼置中。辨識成功會自動關閉掃描視窗。</div>
+        </div>
+
+        <p id="scannerNote" class="scanner-note">正在準備掃描器...</p>
+      </div>
+    </div>
+
     <script>
-      const STORAGE_KEY = 'inventory.apiUrl';
+      const GAS_WEB_APP_URL =
+        'https://script.google.com/macros/s/AKfycbzIrzowR2-_4CTUp_9qy1CLrDI3bDovH6SMgSvhzAHz5QNnTFvvPpGSIKknEYsY3GmszQ/exec';
+
       const state = {
-        apiUrl: '',
+        apiReady: false,
         original: createRecord(),
         current: createRecord(),
         saving: false,
         scannerOpen: false,
         scannerRunning: false,
         scannerTransitioning: false,
+        scannerHandlingResult: false,
         scannerEngine: '',
         scannerInstance: null,
         zxingReader: null,
         zxingControls: null,
-        sheetName: '',
         lastScannedCode: '',
         lastScanAt: 0
       };
 
       const dom = {
-        apiUrl: document.getElementById('apiUrl'),
-        connectButton: document.getElementById('connectButton'),
-        scanToggle: document.getElementById('scanToggle'),
-        stopButton: document.getElementById('stopButton'),
+        scanButton: document.getElementById('scanButton'),
+        saveButton: document.getElementById('saveButton'),
         productName: document.getElementById('productName'),
         quantity: document.getElementById('quantity'),
         barcode: document.getElementById('barcode'),
         minusButton: document.getElementById('minusButton'),
         plusButton: document.getElementById('plusButton'),
-        saveButton: document.getElementById('saveButton'),
-        dirtyIndicator: document.getElementById('dirtyIndicator'),
-        scannerShell: document.getElementById('scannerShell'),
-        scannerStatus: document.getElementById('scannerStatus'),
-        statusBadge: document.getElementById('statusBadge'),
         statusMessage: document.getElementById('statusMessage'),
         timestampValue: document.getElementById('timestampValue'),
-        modeValue: document.getElementById('modeValue'),
-        sheetValue: document.getElementById('sheetValue')
+        scannerModal: document.getElementById('scannerModal'),
+        closeScannerButton: document.getElementById('closeScannerButton'),
+        scannerShell: document.getElementById('scannerShell'),
+        scannerNote: document.getElementById('scannerNote')
       };
 
       initialize();
 
       function initialize() {
-        dom.apiUrl.value = localStorage.getItem(STORAGE_KEY) || '';
-        state.apiUrl = normalizeApiUrl(dom.apiUrl.value);
-
         bindEvents();
-        if (state.apiUrl) {
-          bootstrap();
-        }
+        renderForm();
+        syncActionButtons();
+        bootstrap();
       }
 
       function bindEvents() {
-        dom.connectButton.addEventListener('click', function () {
-          bootstrap();
+        dom.scanButton.addEventListener('click', function () {
+          openScannerModal();
+        });
+
+        dom.closeScannerButton.addEventListener('click', function () {
+          closeScannerModal();
         });
 
         dom.productName.addEventListener('input', function () {
           state.current.productName = dom.productName.value.trim();
-          syncDirtyState();
+          syncActionButtons();
         });
 
         dom.quantity.addEventListener('input', function () {
           state.current.quantity = normalizeQuantityInput(dom.quantity.value);
           dom.quantity.value = state.current.quantity;
-          syncDirtyState();
+          syncActionButtons();
         });
 
         dom.barcode.addEventListener('input', function () {
           state.current.barcode = cleanBarcode(dom.barcode.value);
           dom.barcode.value = state.current.barcode;
-          syncDirtyState();
+          syncActionButtons();
         });
 
         dom.barcode.addEventListener('keydown', function (event) {
@@ -610,14 +582,6 @@
 
         dom.plusButton.addEventListener('click', function () {
           adjustQuantity(1);
-        });
-
-        dom.scanToggle.addEventListener('click', function () {
-          startScanner();
-        });
-
-        dom.stopButton.addEventListener('click', function () {
-          stopScanner();
         });
 
         dom.saveButton.addEventListener('click', function () {
@@ -650,8 +614,80 @@
         });
       }
 
-      function normalizeApiUrl(value) {
-        return String(value || '').trim();
+      async function bootstrap() {
+        setStatus('正在連線資料來源...', 'info');
+        syncActionButtons();
+
+        try {
+          const response = await jsonpRequest('bootstrap');
+          state.apiReady = true;
+          setStatus(
+            response.sheetName
+              ? '已連線，工作表：' + response.sheetName
+              : '已連線，可以開始掃描。',
+            'success'
+          );
+        } catch (error) {
+          state.apiReady = false;
+          setStatus(error.message || '無法連線到 API', 'error');
+        } finally {
+          syncActionButtons();
+        }
+      }
+
+      async function lookupBarcode(rawBarcode, source) {
+        const barcode = cleanBarcode(rawBarcode);
+
+        if (!barcode) {
+          setStatus('請先輸入或掃描條碼。', 'warning');
+          return;
+        }
+
+        if (!state.apiReady) {
+          setStatus('資料來源尚未連線完成，請稍候。', 'warning');
+          return;
+        }
+
+        try {
+          const response = await jsonpRequest('lookup', { barcode: barcode });
+          const record = response.record || createRecord({ barcode: barcode });
+
+          applyRecord(record);
+          setStatus(
+            response.found
+              ? source === 'scan'
+                ? '掃描完成，已帶入既有品項。'
+                : '已找到既有品項。'
+              : '找不到此條碼，請輸入新商品名稱與數量。',
+            response.found ? 'success' : 'warning'
+          );
+        } catch (error) {
+          setStatus(error.message || '查詢失敗', 'error');
+        }
+      }
+
+      function applyRecord(record) {
+        const normalized = normalizeRecord(record);
+        state.original = normalizeRecord(normalized);
+        state.current = normalizeRecord(normalized);
+        renderForm();
+        syncActionButtons();
+      }
+
+      function renderForm() {
+        dom.productName.value = state.current.productName;
+        dom.quantity.value = state.current.quantity;
+        dom.barcode.value = state.current.barcode;
+        dom.timestampValue.textContent =
+          '最後時間戳：' + formatTimestampForDisplay(state.current.timestamp);
+      }
+
+      function adjustQuantity(delta) {
+        const current = Number(state.current.quantity || 0);
+        const next = Math.max(0, current + delta);
+        state.current.quantity = String(next);
+        dom.quantity.value = state.current.quantity;
+        syncActionButtons();
       }
 
       function cleanBarcode(value) {
@@ -664,85 +700,12 @@
         }
 
         const numeric = Number(value);
+
         if (!Number.isFinite(numeric) || numeric < 0) {
           return '';
         }
 
         return String(Math.round(numeric));
-      }
-
-      async function bootstrap() {
-        state.apiUrl = normalizeApiUrl(dom.apiUrl.value);
-
-        if (!state.apiUrl) {
-          setStatus('請先貼上 GAS Web App URL。', 'warning', '未連線');
-          return;
-        }
-
-        localStorage.setItem(STORAGE_KEY, state.apiUrl);
-        dom.dirtyIndicator.textContent = '正在連線 Google Apps Script...';
-
-        try {
-          const response = await jsonpRequest('bootstrap');
-          state.sheetName = response.sheetName || '';
-          dom.sheetValue.textContent = state.sheetName || '工作表';
-          dom.dirtyIndicator.textContent = '已連線，可開始掃描。';
-          setStatus('已連線到 Google Apps Script。', 'success', '已連線');
-        } catch (error) {
-          dom.dirtyIndicator.textContent = '無法連線到 API。';
-          setStatus(error.message || 'API 連線失敗', 'error', '連線失敗');
-        }
-      }
-
-      async function lookupBarcode(rawBarcode, source) {
-        const barcode = cleanBarcode(rawBarcode);
-
-        if (!barcode) {
-          setStatus('請先輸入或掃描條碼。', 'warning', '待命');
-          return;
-        }
-
-        try {
-          const response = await jsonpRequest('lookup', { barcode: barcode });
-          const record = response.record || createRecord({ barcode: barcode });
-
-          applyRecord(record, {
-            message:
-              response.found
-                ? source === 'scan'
-                  ? '掃描完成，已找到既有品項並帶入資料。'
-                  : '已找到既有品項並帶入資料。'
-                : '找不到此條碼。請輸入新商品名稱與庫存數量後再儲存。',
-            tone: response.found ? 'success' : 'warning',
-            mode: response.found ? '既有品項' : '新品項'
-          });
-        } catch (error) {
-          setStatus(error.message || '查詢失敗', 'error', '查詢失敗');
-        }
-      }
-
-      function applyRecord(record, status) {
-        const normalized = normalizeRecord(record);
-        state.original = normalizeRecord(normalized);
-        state.current = normalizeRecord(normalized);
-        renderForm();
-        syncDirtyState();
-        setStatus(status.message, status.tone, status.mode);
-      }
-
-      function renderForm() {
-        dom.productName.value = state.current.productName;
-        dom.quantity.value = state.current.quantity;
-        dom.barcode.value = state.current.barcode;
-        dom.timestampValue.textContent = formatTimestampForDisplay(state.current.timestamp);
-      }
-
-      function adjustQuantity(delta) {
-        const current = Number(state.current.quantity || 0);
-        const next = Math.max(0, current + delta);
-        state.current.quantity = String(next);
-        dom.quantity.value = state.current.quantity;
-        syncDirtyState();
       }
 
       function isDirty() {
@@ -754,35 +717,12 @@
       }
 
       function isFormValid() {
-        return Boolean(state.apiUrl && cleanBarcode(state.current.barcode) && state.current.productName.trim());
+        return Boolean(state.apiReady && cleanBarcode(state.current.barcode) && state.current.productName.trim());
       }
 
-      function syncDirtyState() {
-        const dirty = isDirty();
-        const valid = isFormValid();
-        dom.saveButton.disabled = state.saving || !dirty || !valid;
-
-        if (state.saving) {
-          dom.dirtyIndicator.textContent = '資料寫入中...';
-          return;
-        }
-
-        if (!state.apiUrl) {
-          dom.dirtyIndicator.textContent = '請先貼上 GAS Web App URL 並連線。';
-          return;
-        }
-
-        if (!dirty) {
-          dom.dirtyIndicator.textContent = '目前資料與試算表一致。';
-          return;
-        }
-
-        if (!valid) {
-          dom.dirtyIndicator.textContent = '已有變更，但仍缺少條碼或商品名稱。';
-          return;
-        }
-
-        dom.dirtyIndicator.textContent = '偵測到未儲存變更，可以寫回試算表。';
+      function syncActionButtons() {
+        dom.scanButton.disabled = !state.apiReady || state.scannerTransitioning || state.scannerOpen;
+        dom.saveButton.disabled = state.saving || !isDirty() || !isFormValid();
       }
 
       async function saveCurrentRecord() {
@@ -794,16 +734,16 @@
         state.current.quantity = normalizeQuantityInput(dom.quantity.value);
         state.current.barcode = cleanBarcode(dom.barcode.value);
         renderForm();
-        syncDirtyState();
+        syncActionButtons();
 
         if (!isFormValid()) {
-          setStatus('請先補齊條碼與商品名稱，並確認已連線。', 'warning', '資料不完整');
+          setStatus('請先補齊條碼與商品名稱。', 'warning');
           return;
         }
 
         state.saving = true;
+        syncActionButtons();
         dom.saveButton.textContent = '儲存中...';
-        syncDirtyState();
 
         try {
           const result = await jsonpRequest('saveItem', {
@@ -813,27 +753,24 @@
             quantity: Number(state.current.quantity || 0)
           });
 
-          applyRecord(result.record, {
-            message: result.mode === 'created' ? '新品項已新增到試算表。' : '既有品項已更新到試算表。',
-            tone: 'success',
-            mode: result.mode === 'created' ? '已新增' : '已更新'
-          });
+          applyRecord(result.record);
+          setStatus(
+            result.mode === 'created' ? '新品項已新增到試算表。' : '既有品項已更新到試算表。',
+            'success'
+          );
         } catch (error) {
-          setStatus(error.message || '儲存失敗', 'error', '儲存失敗');
+          setStatus(error.message || '儲存失敗', 'error');
         } finally {
           state.saving = false;
           dom.saveButton.textContent = '儲存變更';
-          syncDirtyState();
+          syncActionButtons();
         }
       }
 
       function jsonpRequest(action, params) {
-        if (!state.apiUrl) {
-          return Promise.reject(new Error('尚未設定 API URL'));
-        }
-
-        const callbackName = '__inventoryCallback_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
-        const url = new URL(state.apiUrl);
+        const callbackName =
+          '__inventoryCallback_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+        const url = new URL(GAS_WEB_APP_URL);
         url.searchParams.set('action', action);
         url.searchParams.set('callback', callbackName);
 
@@ -849,7 +786,7 @@
           const script = document.createElement('script');
           const timeoutId = window.setTimeout(function () {
             cleanup();
-            reject(new Error('API 請求逾時，請確認 URL 與部署權限。'));
+            reject(new Error('API 請求逾時，請確認部署權限與網路連線。'));
           }, 12000);
 
           function cleanup() {
@@ -872,85 +809,76 @@
           script.async = true;
           script.onerror = function () {
             cleanup();
-            reject(new Error('無法載入 API，請確認 GAS 已部署成任何知道連結的人可存取。'));
+            reject(new Error('無法載入 API，請確認 GAS 仍可公開存取。'));
           };
 
           document.body.appendChild(script);
         });
       }
 
+      function openScannerModal() {
+        if (!state.apiReady || state.scannerOpen || state.scannerTransitioning) {
+          return;
+        }
+
+        state.scannerOpen = true;
+        dom.scannerModal.classList.add('is-open');
+        dom.scannerModal.setAttribute('aria-hidden', 'false');
+        dom.scannerNote.textContent = '正在準備掃描器...';
+        syncActionButtons();
+        startScanner();
+      }
+
+      async function closeScannerModal() {
+        await stopScanner();
+        dom.scannerModal.classList.remove('is-open');
+        dom.scannerModal.setAttribute('aria-hidden', 'true');
+        state.scannerOpen = false;
+        syncActionButtons();
+      }
+
       async function startScanner() {
-        if (state.scannerTransitioning) {
-          setStatus('掃描器正在切換狀態，請稍候。', 'warning', '切換中');
-          return;
-        }
-
-        if (state.scannerRunning) {
-          setStatus('掃描器已啟動，請直接對準條碼。', 'info', '掃描中');
-          return;
-        }
-
-        if (!state.apiUrl) {
-          setStatus('請先連線 API，再開啟即時掃描。', 'warning', '未連線');
+        if (state.scannerTransitioning || state.scannerRunning) {
           return;
         }
 
         if (!window.Html5Qrcode && !window.ZXingBrowser) {
-          setStatus('掃描模組尚未載入完成，請稍後再試。', 'error', '掃描不可用');
+          setStatus('掃描模組尚未載入完成，請稍後再試。', 'error');
+          dom.scannerNote.textContent = '掃描模組尚未載入完成。';
+          await closeScannerModal();
           return;
         }
 
         try {
           state.scannerTransitioning = true;
-          dom.scanToggle.disabled = true;
-          dom.stopButton.disabled = true;
-          dom.scanToggle.textContent = '啟動中...';
-
+          syncActionButtons();
+          dom.scannerNote.textContent = '正在請求相機權限...';
           await startScannerWithFallback_();
-
-          state.scannerOpen = true;
           state.scannerRunning = true;
           dom.scannerShell.classList.add('is-active');
-          dom.scannerStatus.textContent = '掃描中';
-          dom.scannerStatus.className = 'status-badge tone-success';
-          dom.scanToggle.textContent = '掃描進行中';
-          setStatus(
+          dom.scannerNote.textContent =
             state.scannerEngine === 'zxing'
-              ? '相機已啟動，使用 ZXing 掃描引擎。'
-              : '相機已啟動，請將條碼置中。',
-            'info',
-            '掃描中'
-          );
+              ? '已啟動 ZXing 掃描引擎，請將條碼置中。'
+              : '已啟動相機，請將條碼置中。';
+          setStatus('掃描器已啟動。', 'success');
         } catch (error) {
-          setStatus(explainScannerError(error), 'error', '掃描失敗');
-          dom.scannerStatus.textContent = '掃描失敗';
-          dom.scannerStatus.className = 'status-badge tone-error';
-          dom.scanToggle.textContent = '開啟即時掃描';
+          setStatus(explainScannerError(error), 'error');
+          dom.scannerNote.textContent = explainScannerError(error);
+          await closeScannerModal();
         } finally {
           state.scannerTransitioning = false;
-          dom.scanToggle.disabled = false;
-          dom.stopButton.disabled = false;
+          syncActionButtons();
         }
       }
 
       async function stopScanner() {
-        if (state.scannerTransitioning) {
-          return;
-        }
-
-        if (!state.scannerInstance || !state.scannerRunning) {
+        if (!state.scannerRunning && !state.scannerEngine) {
           dom.scannerShell.classList.remove('is-active');
-          dom.scannerStatus.textContent = '待命中';
-          dom.scannerStatus.className = 'status-badge tone-info';
-          dom.scanToggle.textContent = '開啟即時掃描';
+          dom.scannerNote.textContent = '掃描器已關閉。';
           return;
         }
 
         try {
-          state.scannerTransitioning = true;
-          dom.scanToggle.disabled = true;
-          dom.stopButton.disabled = true;
-          dom.stopButton.textContent = '關閉中...';
           if (state.scannerEngine === 'html5' && state.scannerInstance) {
             await state.scannerInstance.stop();
             if (typeof state.scannerInstance.clear === 'function') {
@@ -960,20 +888,14 @@
             state.zxingControls.stop();
           }
         } catch (error) {
-          // ignore stop errors from fast toggles
+          // html5-qrcode / zxing 在快速關閉時可能會拋出 stop 錯誤，這裡忽略。
         } finally {
-          state.scannerOpen = false;
           state.scannerRunning = false;
-          state.scannerTransitioning = false;
           state.scannerEngine = '';
           state.zxingControls = null;
+          state.scannerHandlingResult = false;
           dom.scannerShell.classList.remove('is-active');
-          dom.scannerStatus.textContent = '待命中';
-          dom.scannerStatus.className = 'status-badge tone-info';
-          dom.scanToggle.textContent = '開啟即時掃描';
-          dom.scanToggle.disabled = false;
-          dom.stopButton.disabled = false;
-          dom.stopButton.textContent = '關閉掃描';
+          dom.scannerNote.textContent = '掃描器已關閉。';
         }
       }
 
@@ -990,7 +912,7 @@
               { facingMode: { ideal: 'environment' } },
               {
                 fps: 12,
-                qrbox: { width: 250, height: 160 },
+                qrbox: { width: 250, height: 170 },
                 aspectRatio: 1.6,
                 rememberLastUsedCamera: true,
                 formatsToSupport: [
@@ -1029,7 +951,7 @@
         video.setAttribute('playsinline', 'true');
         video.setAttribute('muted', 'true');
         video.style.width = '100%';
-        video.style.height = '280px';
+        video.style.height = '320px';
         video.style.objectFit = 'cover';
         video.style.borderRadius = '24px';
         readerRoot.appendChild(video);
@@ -1067,7 +989,7 @@
         const barcode = cleanBarcode(decodedText);
         const now = Date.now();
 
-        if (!barcode) {
+        if (!barcode || state.scannerHandlingResult) {
           return;
         }
 
@@ -1075,31 +997,40 @@
           return;
         }
 
+        state.scannerHandlingResult = true;
         state.lastScannedCode = barcode;
         state.lastScanAt = now;
-        stopScanner();
-        lookupBarcode(barcode, 'scan');
+
+        closeScannerModal()
+          .then(function () {
+            return lookupBarcode(barcode, 'scan');
+          })
+          .finally(function () {
+            state.scannerHandlingResult = false;
+          });
+      }
+
+      function setStatus(message, tone) {
+        dom.statusMessage.textContent = message;
+        dom.statusMessage.dataset.tone = tone || 'info';
       }
 
       function explainScannerError(error) {
         const message = String((error && error.message) || error || '');
 
         if (/permission|denied|notallowed/i.test(message)) {
-          return '相機權限被拒絕，請確認這一頁是 HTTPS 靜態網址，並在 Safari 允許相機。';
+          return '相機權限被拒絕，請確認是用 iPhone Safari 打開並允許相機。';
+        }
+
+        if (/already under transition/i.test(message)) {
+          return '掃描器仍在切換狀態，請再試一次。';
         }
 
         if (/notfound|camera|device/i.test(message)) {
-          return '找不到可用相機，請確認你是用 iPhone Safari 開啟。';
+          return '找不到可用相機，請確認裝置相機正常。';
         }
 
         return message || '無法啟動相機。';
-      }
-
-      function setStatus(message, tone, mode) {
-        dom.statusMessage.textContent = message;
-        dom.modeValue.textContent = mode;
-        dom.statusBadge.textContent = mode;
-        dom.statusBadge.className = 'status-badge tone-' + tone;
       }
 
       function formatTimestampForDisplay(timestamp) {
@@ -1108,6 +1039,7 @@
         }
 
         const date = new Date(timestamp);
+
         if (Number.isNaN(date.getTime())) {
           return timestamp;
         }
