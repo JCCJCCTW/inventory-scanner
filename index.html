@@ -17,6 +17,10 @@
       src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"
       defer
     ></script>
+    <script
+      src="https://unpkg.com/@zxing/browser@0.1.5"
+      defer
+    ></script>
     <style>
       :root {
         --bg: #f5efe4;
@@ -527,7 +531,10 @@
         scannerOpen: false,
         scannerRunning: false,
         scannerTransitioning: false,
+        scannerEngine: '',
         scannerInstance: null,
+        zxingReader: null,
+        zxingControls: null,
         sheetName: '',
         lastScannedCode: '',
         lastScanAt: 0
@@ -888,7 +895,7 @@
           return;
         }
 
-        if (!window.Html5Qrcode) {
+        if (!window.Html5Qrcode && !window.ZXingBrowser) {
           setStatus('掃描模組尚未載入完成，請稍後再試。', 'error', '掃描不可用');
           return;
         }
@@ -899,28 +906,7 @@
           dom.stopButton.disabled = true;
           dom.scanToggle.textContent = '啟動中...';
 
-          if (!state.scannerInstance) {
-            state.scannerInstance = new Html5Qrcode('reader');
-          }
-
-          await state.scannerInstance.start(
-            { facingMode: { ideal: 'environment' } },
-            {
-              fps: 12,
-              qrbox: { width: 250, height: 160 },
-              aspectRatio: 1.6,
-              rememberLastUsedCamera: true,
-              formatsToSupport: [
-                Html5QrcodeSupportedFormats.EAN_13,
-                Html5QrcodeSupportedFormats.EAN_8,
-                Html5QrcodeSupportedFormats.CODE_128,
-                Html5QrcodeSupportedFormats.CODE_39,
-                Html5QrcodeSupportedFormats.UPC_A,
-                Html5QrcodeSupportedFormats.UPC_E
-              ]
-            },
-            onScanSuccess
-          );
+          await startScannerWithFallback_();
 
           state.scannerOpen = true;
           state.scannerRunning = true;
@@ -928,7 +914,13 @@
           dom.scannerStatus.textContent = '掃描中';
           dom.scannerStatus.className = 'status-badge tone-success';
           dom.scanToggle.textContent = '掃描進行中';
-          setStatus('相機已啟動，請將條碼置中。', 'info', '掃描中');
+          setStatus(
+            state.scannerEngine === 'zxing'
+              ? '相機已啟動，使用 ZXing 掃描引擎。'
+              : '相機已啟動，請將條碼置中。',
+            'info',
+            '掃描中'
+          );
         } catch (error) {
           setStatus(explainScannerError(error), 'error', '掃描失敗');
           dom.scannerStatus.textContent = '掃描失敗';
@@ -959,13 +951,22 @@
           dom.scanToggle.disabled = true;
           dom.stopButton.disabled = true;
           dom.stopButton.textContent = '關閉中...';
-          await state.scannerInstance.stop();
+          if (state.scannerEngine === 'html5' && state.scannerInstance) {
+            await state.scannerInstance.stop();
+            if (typeof state.scannerInstance.clear === 'function') {
+              await state.scannerInstance.clear();
+            }
+          } else if (state.scannerEngine === 'zxing' && state.zxingControls) {
+            state.zxingControls.stop();
+          }
         } catch (error) {
           // ignore stop errors from fast toggles
         } finally {
           state.scannerOpen = false;
           state.scannerRunning = false;
           state.scannerTransitioning = false;
+          state.scannerEngine = '';
+          state.zxingControls = null;
           dom.scannerShell.classList.remove('is-active');
           dom.scannerStatus.textContent = '待命中';
           dom.scannerStatus.className = 'status-badge tone-info';
@@ -976,7 +977,93 @@
         }
       }
 
+      async function startScannerWithFallback_() {
+        let html5Error = null;
+
+        if (window.Html5Qrcode && window.Html5QrcodeSupportedFormats) {
+          try {
+            if (!state.scannerInstance) {
+              state.scannerInstance = new Html5Qrcode('reader');
+            }
+
+            await state.scannerInstance.start(
+              { facingMode: { ideal: 'environment' } },
+              {
+                fps: 12,
+                qrbox: { width: 250, height: 160 },
+                aspectRatio: 1.6,
+                rememberLastUsedCamera: true,
+                formatsToSupport: [
+                  Html5QrcodeSupportedFormats.EAN_13,
+                  Html5QrcodeSupportedFormats.EAN_8,
+                  Html5QrcodeSupportedFormats.CODE_128,
+                  Html5QrcodeSupportedFormats.CODE_39,
+                  Html5QrcodeSupportedFormats.UPC_A,
+                  Html5QrcodeSupportedFormats.UPC_E
+                ]
+              },
+              onScanSuccess
+            );
+
+            state.scannerEngine = 'html5';
+            return;
+          } catch (error) {
+            html5Error = error;
+          }
+        }
+
+        if (window.ZXingBrowser) {
+          await startZxingScanner_();
+          state.scannerEngine = 'zxing';
+          return;
+        }
+
+        throw html5Error || new Error('找不到可用的掃描引擎。');
+      }
+
+      async function startZxingScanner_() {
+        const readerRoot = document.getElementById('reader');
+        readerRoot.innerHTML = '';
+
+        const video = document.createElement('video');
+        video.setAttribute('playsinline', 'true');
+        video.setAttribute('muted', 'true');
+        video.style.width = '100%';
+        video.style.height = '280px';
+        video.style.objectFit = 'cover';
+        video.style.borderRadius = '24px';
+        readerRoot.appendChild(video);
+
+        if (!state.zxingReader) {
+          state.zxingReader = new ZXingBrowser.BrowserMultiFormatReader();
+        }
+
+        state.zxingControls = await state.zxingReader.decodeFromConstraints(
+          {
+            video: {
+              facingMode: { ideal: 'environment' },
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            }
+          },
+          video,
+          function (result, error, controls) {
+            if (result && typeof result.getText === 'function') {
+              handleScanSuccess_(result.getText());
+            }
+
+            if (controls && !state.zxingControls) {
+              state.zxingControls = controls;
+            }
+          }
+        );
+      }
+
       function onScanSuccess(decodedText) {
+        handleScanSuccess_(decodedText);
+      }
+
+      function handleScanSuccess_(decodedText) {
         const barcode = cleanBarcode(decodedText);
         const now = Date.now();
 
