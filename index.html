@@ -94,7 +94,7 @@
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 12px;
-        margin-bottom: 18px;
+        margin-bottom: 16px;
       }
 
       .primary-button,
@@ -136,8 +136,8 @@
 
       .brand-row {
         display: grid;
-        gap: 6px;
-        margin-bottom: 16px;
+        gap: 0;
+        margin-bottom: 18px;
       }
 
       .eyebrow {
@@ -160,9 +160,9 @@
         letter-spacing: -0.04em;
       }
 
-      .subcopy,
       .status-line,
-      .timestamp-line {
+      .timestamp-line,
+      .quantity-delta {
         color: var(--muted);
         line-height: 1.55;
       }
@@ -222,6 +222,19 @@
         grid-template-columns: 70px 1fr 70px;
         gap: 10px;
         align-items: center;
+      }
+
+      .quantity-delta {
+        font-size: 0.86rem;
+        font-weight: 800;
+      }
+
+      .quantity-delta[data-tone='success'] {
+        color: var(--success);
+      }
+
+      .quantity-delta[data-tone='warning'] {
+        color: var(--warning);
       }
 
       .stepper-button {
@@ -414,15 +427,13 @@
     <div class="app-shell">
       <div class="app-frame">
         <section class="main-card">
+          <div class="brand-row">
+            <h1>掃碼進出庫存管理</h1>
+          </div>
+
           <div class="topbar">
             <button id="scanButton" class="primary-button" type="button" disabled>開啟掃描</button>
             <button id="saveButton" class="save-button" type="button" disabled>儲存變更</button>
-          </div>
-
-          <div class="brand-row">
-            <p class="eyebrow">Live Inventory Capture</p>
-            <h1>掃碼進出庫存管理</h1>
-            <p class="subcopy">開頁後會自動連線 Google Sheets API。連線完成前，掃描按鈕會維持鎖定。</p>
           </div>
 
           <div class="field-stack">
@@ -451,6 +462,7 @@
                 />
                 <button id="plusButton" class="stepper-button" type="button" aria-label="增加數量">+</button>
               </div>
+              <p id="quantityDelta" class="quantity-delta" data-tone="info">本次未變動數量</p>
             </div>
 
             <label class="field">
@@ -521,6 +533,7 @@
         saveButton: document.getElementById('saveButton'),
         productName: document.getElementById('productName'),
         quantity: document.getElementById('quantity'),
+        quantityDelta: document.getElementById('quantityDelta'),
         barcode: document.getElementById('barcode'),
         minusButton: document.getElementById('minusButton'),
         plusButton: document.getElementById('plusButton'),
@@ -558,6 +571,7 @@
         dom.quantity.addEventListener('input', function () {
           state.current.quantity = normalizeQuantityInput(dom.quantity.value);
           dom.quantity.value = state.current.quantity;
+          renderQuantityDelta();
           syncActionButtons();
         });
 
@@ -680,6 +694,7 @@
         dom.barcode.value = state.current.barcode;
         dom.timestampValue.textContent =
           '最後時間戳：' + formatTimestampForDisplay(state.current.timestamp);
+        renderQuantityDelta();
       }
 
       function adjustQuantity(delta) {
@@ -687,7 +702,29 @@
         const next = Math.max(0, current + delta);
         state.current.quantity = String(next);
         dom.quantity.value = state.current.quantity;
+        renderQuantityDelta();
         syncActionButtons();
+      }
+
+      function renderQuantityDelta() {
+        const originalQuantity = Number(state.original.quantity || 0);
+        const currentQuantity = Number(state.current.quantity || 0);
+        const difference = currentQuantity - originalQuantity;
+
+        if (difference > 0) {
+          dom.quantityDelta.textContent = '本次增加數量：' + difference;
+          dom.quantityDelta.dataset.tone = 'success';
+          return;
+        }
+
+        if (difference < 0) {
+          dom.quantityDelta.textContent = '本次減少數量：' + Math.abs(difference);
+          dom.quantityDelta.dataset.tone = 'warning';
+          return;
+        }
+
+        dom.quantityDelta.textContent = '本次未變動數量';
+        dom.quantityDelta.dataset.tone = 'info';
       }
 
       function cleanBarcode(value) {
