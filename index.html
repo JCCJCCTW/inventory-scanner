@@ -513,6 +513,7 @@
 
       const state = {
         apiReady: false,
+        inventoryMap: new Map(),
         original: createRecord(),
         current: createRecord(),
         saving: false,
@@ -634,6 +635,7 @@
 
         try {
           const response = await jsonpRequest('bootstrap');
+          setInventoryIndex(response.items || []);
           state.apiReady = true;
           setStatus(
             response.sheetName
@@ -663,8 +665,25 @@
         }
 
         try {
+          const localRecord = state.inventoryMap.get(barcode);
+
+          if (localRecord) {
+            applyRecord(localRecord);
+            setStatus(
+              source === 'scan'
+                ? '掃描完成，已從本地索引帶入既有品項。'
+                : '已從本地索引找到既有品項。',
+              'success'
+            );
+            return;
+          }
+
           const response = await jsonpRequest('lookup', { barcode: barcode });
           const record = response.record || createRecord({ barcode: barcode });
+
+          if (response.found) {
+            upsertInventoryRecord(record);
+          }
 
           applyRecord(record);
           setStatus(
@@ -686,6 +705,28 @@
         state.current = normalizeRecord(normalized);
         renderForm();
         syncActionButtons();
+      }
+
+      function setInventoryIndex(items) {
+        state.inventoryMap = new Map();
+
+        (items || []).forEach(function (item) {
+          const normalized = normalizeRecord(item);
+
+          if (normalized.barcode) {
+            state.inventoryMap.set(normalized.barcode, normalized);
+          }
+        });
+      }
+
+      function upsertInventoryRecord(record) {
+        const normalized = normalizeRecord(record);
+
+        if (!normalized.barcode) {
+          return;
+        }
+
+        state.inventoryMap.set(normalized.barcode, normalized);
       }
 
       function renderForm() {
@@ -783,6 +824,7 @@
         dom.saveButton.textContent = '儲存中...';
 
         try {
+          const previousBarcode = state.original.barcode;
           const result = await jsonpRequest('saveItem', {
             rowNumber: state.original.rowNumber || '',
             barcode: state.current.barcode,
@@ -790,6 +832,10 @@
             quantity: Number(state.current.quantity || 0)
           });
 
+          if (previousBarcode && previousBarcode !== result.record.barcode) {
+            state.inventoryMap.delete(previousBarcode);
+          }
+          upsertInventoryRecord(result.record);
           applyRecord(result.record);
           setStatus(
             result.mode === 'created' ? '新品項已新增到試算表。' : '既有品項已更新到試算表。',
