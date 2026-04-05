@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-Hant">
   <head>
     <meta charset="UTF-8" />
@@ -30,14 +30,12 @@
         --muted: #5b6a79;
         --line: rgba(19, 33, 47, 0.1);
         --accent: #ee6c3b;
-        --accent-dark: #c74b22;
         --success: #1f8f66;
         --warning: #bf7c17;
         --error: #bf394d;
         --scanner: #0e141b;
         --shadow: 0 20px 60px rgba(19, 33, 47, 0.15);
         --radius-xl: 28px;
-        --radius-lg: 22px;
         --radius-md: 18px;
       }
 
@@ -91,6 +89,21 @@
         border: 1px solid rgba(255, 255, 255, 0.48);
       }
 
+      .brand-row {
+        margin-bottom: 18px;
+      }
+
+      h1,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: clamp(1.8rem, 5vw, 2.35rem);
+        line-height: 1.02;
+        letter-spacing: -0.04em;
+      }
+
       .topbar {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -135,39 +148,6 @@
         box-shadow: none;
       }
 
-      .brand-row {
-        display: grid;
-        gap: 0;
-        margin-bottom: 18px;
-      }
-
-      .eyebrow {
-        margin: 0;
-        color: var(--accent-dark);
-        font-size: 0.75rem;
-        font-weight: 800;
-        letter-spacing: 0.16em;
-        text-transform: uppercase;
-      }
-
-      h1,
-      p {
-        margin: 0;
-      }
-
-      h1 {
-        font-size: clamp(1.8rem, 5vw, 2.35rem);
-        line-height: 1.02;
-        letter-spacing: -0.04em;
-      }
-
-      .status-line,
-      .timestamp-line,
-      .quantity-delta {
-        color: var(--muted);
-        line-height: 1.55;
-      }
-
       .field-stack {
         display: grid;
         gap: 14px;
@@ -187,8 +167,15 @@
         font-weight: 800;
       }
 
-      .field-hint {
+      .field-hint,
+      .status-line,
+      .timestamp-line,
+      .quantity-delta {
         color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .field-hint {
         font-size: 0.78rem;
         font-weight: 600;
       }
@@ -225,19 +212,6 @@
         align-items: center;
       }
 
-      .quantity-delta {
-        font-size: 0.86rem;
-        font-weight: 800;
-      }
-
-      .quantity-delta[data-tone='success'] {
-        color: var(--success);
-      }
-
-      .quantity-delta[data-tone='warning'] {
-        color: var(--warning);
-      }
-
       .stepper-button {
         min-height: 64px;
         background: #162130;
@@ -252,6 +226,19 @@
         text-align: center;
         font-size: 1.8rem;
         font-weight: 800;
+      }
+
+      .quantity-delta {
+        font-size: 0.86rem;
+        font-weight: 800;
+      }
+
+      .quantity-delta[data-tone='success'] {
+        color: var(--success);
+      }
+
+      .quantity-delta[data-tone='warning'] {
+        color: var(--warning);
       }
 
       .status-strip {
@@ -416,12 +403,6 @@
         font-size: 0.84rem;
         line-height: 1.6;
       }
-
-      @media (max-width: 390px) {
-        .topbar {
-          grid-template-columns: 1fr 1fr;
-        }
-      }
     </style>
   </head>
   <body>
@@ -476,8 +457,10 @@
                 class="text-input"
                 type="text"
                 autocomplete="off"
-                inputmode="numeric"
-                placeholder="掃描結果會顯示在這裡"
+                autocapitalize="off"
+                spellcheck="false"
+                inputmode="text"
+                placeholder="可手動輸入，例如 1234567890-1"
               />
             </label>
           </div>
@@ -639,9 +622,7 @@
           setInventoryIndex(response.items || []);
           state.apiReady = true;
           setStatus(
-            response.sheetName
-              ? '已連線，工作表：' + response.sheetName
-              : '已連線，可以開始掃描。',
+            response.sheetName ? '已連線，工作表：' + response.sheetName : '已連線，可以開始掃描。',
             'success'
           );
         } catch (error) {
@@ -671,9 +652,7 @@
           if (localRecord) {
             applyRecord(localRecord);
             setStatus(
-              source === 'scan'
-                ? '掃描完成，已從本地索引帶入既有品項。'
-                : '已從本地索引找到既有品項。',
+              source === 'scan' ? '掃描完成，已從本地索引帶入既有品項。' : '已從本地索引找到既有品項。',
               'success'
             );
             return;
@@ -946,8 +925,9 @@
               : '已啟動相機，請將條碼置中。';
           setStatus('掃描器已啟動。', 'success');
         } catch (error) {
-          setStatus(explainScannerError(error), 'error');
-          dom.scannerNote.textContent = explainScannerError(error);
+          const message = explainScannerError(error);
+          setStatus(message, 'error');
+          dom.scannerNote.textContent = message;
           await closeScannerModal();
         } finally {
           state.scannerTransitioning = false;
@@ -972,7 +952,7 @@
             state.zxingControls.stop();
           }
         } catch (error) {
-          // html5-qrcode / zxing 在快速關閉時可能會拋出 stop 錯誤，這裡忽略。
+          // 忽略快速關閉時的 stop 例外。
         } finally {
           state.scannerRunning = false;
           state.scannerEngine = '';
