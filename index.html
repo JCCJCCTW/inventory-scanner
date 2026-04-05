@@ -804,6 +804,18 @@
         dom.saveButton.textContent = '儲存中...';
 
         try {
+          const existingRecord = state.inventoryMap.get(state.current.barcode);
+
+          if (
+            existingRecord &&
+            state.original.rowNumber &&
+            existingRecord.rowNumber !== state.original.rowNumber
+          ) {
+            applyRecord(existingRecord);
+            setStatus('此條碼已對應到另一個既有品項，已自動切換到該品項。請重新確認數量後再儲存。', 'warning');
+            return;
+          }
+
           const previousBarcode = state.original.barcode;
           const result = await jsonpRequest('saveItem', {
             rowNumber: state.original.rowNumber || '',
@@ -1121,3 +1133,5 @@
     </script>
   </body>
 </html>
+
+
