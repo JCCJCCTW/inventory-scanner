@@ -384,8 +384,8 @@
         position: absolute;
         left: 50%;
         top: 50%;
-        width: min(82%, 320px);
-        height: 112px;
+        width: min(68%, 248px);
+        height: 76px;
         transform: translate(-50%, -50%);
         border-radius: 20px;
         box-shadow:
@@ -1034,7 +1034,7 @@
               },
               {
                 fps: 28,
-                qrbox: { width: 320, height: 112 },
+                qrbox: { width: 248, height: 76 },
                 aspectRatio: 1.6,
                 disableFlip: true,
                 rememberLastUsedCamera: true,
@@ -1138,8 +1138,8 @@
             return;
           }
 
-          const cropWidth = Math.round(videoWidth * 0.82);
-          const cropHeight = Math.round(videoHeight * 0.28);
+          const cropWidth = Math.round(videoWidth * 0.64);
+          const cropHeight = Math.round(videoHeight * 0.18);
           const cropX = Math.round((videoWidth - cropWidth) / 2);
           const cropY = Math.round((videoHeight - cropHeight) / 2);
 
@@ -1263,7 +1263,7 @@
 
           if (!state.audioGainNode) {
             state.audioGainNode = state.audioContext.createGain();
-            state.audioGainNode.gain.value = 5.2;
+            state.audioGainNode.gain.value = 8;
             state.audioGainNode.connect(state.audioContext.destination);
           }
 
