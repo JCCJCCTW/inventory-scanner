@@ -506,6 +506,11 @@
         scannerHandlingResult: false,
         scannerEngine: '',
         scannerInstance: null,
+        nativeDetector: null,
+        nativeStream: null,
+        nativeVideo: null,
+        nativeDetecting: false,
+        nativeScanFrame: 0,
         audioContext: null,
         audioGainNode: null,
         zxingReader: null,
@@ -876,7 +881,7 @@
           return;
         }
 
-        if (!window.Html5Qrcode && !window.ZXingBrowser) {
+        if (!window.BarcodeDetector && !window.Html5Qrcode && !window.ZXingBrowser) {
           setStatus('掃描模組尚未載入完成，請稍後再試。', 'error');
           dom.scannerNote.textContent = '掃描模組尚未載入完成。';
           await closeScannerModal();
@@ -891,7 +896,9 @@
           state.scannerRunning = true;
           dom.scannerShell.classList.add('is-active');
           dom.scannerNote.textContent =
-            state.scannerEngine === 'zxing'
+            state.scannerEngine === 'native'
+              ? '已啟動原生掃描引擎，請將條碼置中。'
+              : state.scannerEngine === 'zxing'
               ? '已啟動 ZXing 掃描引擎，請將條碼置中。'
               : '已啟動相機，請將條碼置中。';
           setStatus('掃描器已啟動。', 'success');
@@ -914,7 +921,20 @@
         }
 
         try {
-          if (state.scannerEngine === 'html5' && state.scannerInstance) {
+          if (state.scannerEngine === 'native') {
+            if (state.nativeScanFrame) {
+              window.cancelAnimationFrame(state.nativeScanFrame);
+            }
+            if (state.nativeVideo) {
+              state.nativeVideo.pause();
+              state.nativeVideo.srcObject = null;
+            }
+            if (state.nativeStream) {
+              state.nativeStream.getTracks().forEach(function (track) {
+                track.stop();
+              });
+            }
+          } else if (state.scannerEngine === 'html5' && state.scannerInstance) {
             await state.scannerInstance.stop();
             if (typeof state.scannerInstance.clear === 'function') {
               await state.scannerInstance.clear();
@@ -927,6 +947,10 @@
         } finally {
           state.scannerRunning = false;
           state.scannerEngine = '';
+          state.nativeStream = null;
+          state.nativeVideo = null;
+          state.nativeDetecting = false;
+          state.nativeScanFrame = 0;
           state.zxingControls = null;
           state.scannerHandlingResult = false;
           dom.scannerShell.classList.remove('is-active');
@@ -935,7 +959,18 @@
       }
 
       async function startScannerWithFallback_() {
+        let nativeError = null;
         let html5Error = null;
+
+        if (window.BarcodeDetector && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          try {
+            await startNativeScanner_();
+            state.scannerEngine = 'native';
+            return;
+          } catch (error) {
+            nativeError = error;
+          }
+        }
 
         if (window.Html5Qrcode && window.Html5QrcodeSupportedFormats) {
           try {
@@ -952,7 +987,7 @@
               },
               {
                 fps: 28,
-                qrbox: { width: 280, height: 132 },
+                qrbox: { width: 300, height: 124 },
                 aspectRatio: 1.6,
                 disableFlip: true,
                 rememberLastUsedCamera: true,
@@ -964,8 +999,7 @@
                   Html5QrcodeSupportedFormats.EAN_13,
                   Html5QrcodeSupportedFormats.UPC_A,
                   Html5QrcodeSupportedFormats.EAN_8,
-                  Html5QrcodeSupportedFormats.UPC_E,
-                  Html5QrcodeSupportedFormats.CODE_39
+                  Html5QrcodeSupportedFormats.UPC_E
                 ]
               },
               onScanSuccess
@@ -984,7 +1018,90 @@
           return;
         }
 
-        throw html5Error || new Error('找不到可用的掃描引擎。');
+        throw nativeError || html5Error || new Error('找不到可用的掃描引擎。');
+      }
+
+      async function startNativeScanner_() {
+        const readerRoot = document.getElementById('reader');
+        readerRoot.innerHTML = '';
+
+        const video = document.createElement('video');
+        video.setAttribute('playsinline', 'true');
+        video.setAttribute('muted', 'true');
+        video.setAttribute('autoplay', 'true');
+        video.style.width = '100%';
+        video.style.height = '320px';
+        video.style.objectFit = 'cover';
+        video.style.borderRadius = '24px';
+        readerRoot.appendChild(video);
+
+        let formats = ['code_128', 'ean_13', 'upc_a', 'ean_8', 'upc_e'];
+
+        if (typeof BarcodeDetector.getSupportedFormats === 'function') {
+          const supportedFormats = await BarcodeDetector.getSupportedFormats();
+          const filtered = formats.filter(function (format) {
+            return supportedFormats.includes(format);
+          });
+
+          if (filtered.length) {
+            formats = filtered;
+          }
+        }
+
+        state.nativeDetector = new BarcodeDetector({ formats: formats });
+        state.nativeStream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            frameRate: { ideal: 30, max: 30 }
+          }
+        });
+
+        video.srcObject = state.nativeStream;
+        state.nativeVideo = video;
+
+        await video.play();
+
+        const scanFrame = function () {
+          if (state.scannerEngine !== 'native' || !state.nativeVideo || !state.nativeDetector) {
+            return;
+          }
+
+          state.nativeScanFrame = window.requestAnimationFrame(scanFrame);
+
+          if (state.nativeVideo.readyState < 2 || state.scannerHandlingResult) {
+            return;
+          }
+
+          if (state.nativeDetecting) {
+            return;
+          }
+
+          state.nativeDetecting = true;
+          state.nativeDetector
+            .detect(state.nativeVideo)
+            .then(function (codes) {
+              if (!codes || !codes.length) {
+                return;
+              }
+
+              const rawValue = codes[0] && codes[0].rawValue ? codes[0].rawValue : '';
+
+              if (rawValue) {
+                handleScanSuccess_(rawValue);
+              }
+            })
+            .catch(function () {
+              // Ignore transient detector errors and continue scanning.
+            })
+            .finally(function () {
+              state.nativeDetecting = false;
+            });
+        };
+
+        state.nativeScanFrame = window.requestAnimationFrame(scanFrame);
       }
 
       async function startZxingScanner_() {
@@ -1068,7 +1185,7 @@
 
           if (!state.audioGainNode) {
             state.audioGainNode = state.audioContext.createGain();
-            state.audioGainNode.gain.value = 1.8;
+            state.audioGainNode.gain.value = 2.6;
             state.audioGainNode.connect(state.audioContext.destination);
           }
 
@@ -1146,7 +1263,7 @@
           oscillator.type = type;
           oscillator.frequency.setValueAtTime(frequency, noteStart);
           gainNode.gain.setValueAtTime(0.0001, noteStart);
-          gainNode.gain.exponentialRampToValueAtTime(0.2, noteStart + 0.012);
+          gainNode.gain.exponentialRampToValueAtTime(0.28, noteStart + 0.012);
           gainNode.gain.exponentialRampToValueAtTime(0.0001, noteStart + duration);
 
           oscillator.connect(gainNode);
