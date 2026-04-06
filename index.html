@@ -541,6 +541,7 @@
 
       function bindEvents() {
         dom.scanButton.addEventListener('click', function () {
+          unlockFeedback_();
           openScannerModal();
         });
 
@@ -584,6 +585,7 @@
         });
 
         dom.saveButton.addEventListener('click', function () {
+          unlockFeedback_();
           saveCurrentRecord();
         });
       }
@@ -852,7 +854,6 @@
           return;
         }
 
-        ensureAudioReady_();
         state.scannerOpen = true;
         dom.scannerModal.classList.add('is-open');
         dom.scannerModal.setAttribute('aria-hidden', 'false');
@@ -1041,19 +1042,39 @@
         closeScannerModal();
       }
 
-      function ensureAudioReady_() {
-        if (state.audioContext || !window.AudioContext) {
+      function unlockFeedback_() {
+        if (!window.AudioContext) {
           return;
         }
 
         try {
-          state.audioContext = new AudioContext();
+          if (!state.audioContext) {
+            state.audioContext = new AudioContext();
+          }
+
+          if (state.audioContext.state === 'suspended') {
+            state.audioContext.resume();
+          }
+
+          const buffer = state.audioContext.createBuffer(1, 1, 22050);
+          const source = state.audioContext.createBufferSource();
+          source.buffer = buffer;
+          source.connect(state.audioContext.destination);
+          source.start(0);
         } catch (error) {
           state.audioContext = null;
         }
       }
 
       function playFeedback_(kind) {
+        if (state.audioContext && state.audioContext.state === 'suspended') {
+          try {
+            state.audioContext.resume();
+          } catch (error) {
+            return;
+          }
+        }
+
         try {
           if (navigator.vibrate) {
             if (kind === 'scanSuccess') {
