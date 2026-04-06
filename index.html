@@ -804,6 +804,8 @@
         dom.saveButton.textContent = '儲存中...';
 
         try {
+          const barcodeChanged =
+            Boolean(state.original.barcode) && state.current.barcode !== state.original.barcode;
           const existingRecord = state.inventoryMap.get(state.current.barcode);
 
           if (
@@ -818,19 +820,21 @@
 
           const previousBarcode = state.original.barcode;
           const result = await jsonpRequest('saveItem', {
-            rowNumber: state.original.rowNumber || '',
+            rowNumber: barcodeChanged ? '' : state.original.rowNumber || '',
             barcode: state.current.barcode,
             productName: state.current.productName,
             quantity: Number(state.current.quantity || 0)
           });
 
-          if (previousBarcode && previousBarcode !== result.record.barcode) {
+          if (!barcodeChanged && previousBarcode && previousBarcode !== result.record.barcode) {
             state.inventoryMap.delete(previousBarcode);
           }
           upsertInventoryRecord(result.record);
           applyRecord(result.record);
           setStatus(
-            result.mode === 'created' ? '新品項已新增到試算表。' : '既有品項已更新到試算表。',
+            barcodeChanged || result.mode === 'created'
+              ? '條碼已視為新商品新增到試算表，原條碼資料保持不變。'
+              : '既有品項已更新到試算表。',
             'success'
           );
         } catch (error) {
@@ -987,15 +991,15 @@
             await state.scannerInstance.start(
               { facingMode: { ideal: 'environment' } },
               {
-                fps: 12,
-                qrbox: { width: 250, height: 170 },
+                fps: 18,
+                qrbox: { width: 280, height: 180 },
                 aspectRatio: 1.6,
                 rememberLastUsedCamera: true,
                 formatsToSupport: [
+                  Html5QrcodeSupportedFormats.QR_CODE,
                   Html5QrcodeSupportedFormats.EAN_13,
                   Html5QrcodeSupportedFormats.EAN_8,
                   Html5QrcodeSupportedFormats.CODE_128,
-                  Html5QrcodeSupportedFormats.CODE_39,
                   Html5QrcodeSupportedFormats.UPC_A,
                   Html5QrcodeSupportedFormats.UPC_E
                 ]
@@ -1077,13 +1081,10 @@
         state.lastScannedCode = barcode;
         state.lastScanAt = now;
 
-        closeScannerModal()
-          .then(function () {
-            return lookupBarcode(barcode, 'scan');
-          })
-          .finally(function () {
-            state.scannerHandlingResult = false;
-          });
+        Promise.resolve(lookupBarcode(barcode, 'scan')).finally(function () {
+          state.scannerHandlingResult = false;
+        });
+        closeScannerModal();
       }
 
       function setStatus(message, tone) {
@@ -1133,5 +1134,6 @@
     </script>
   </body>
 </html>
+
 
 
