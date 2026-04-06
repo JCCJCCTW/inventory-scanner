@@ -1022,8 +1022,19 @@
       }
 
       async function startScannerWithFallback_() {
+        const preferHtml5 = prefersHtml5Scanner_();
         let nativeError = null;
         let html5Error = null;
+
+        if (preferHtml5 && window.Html5Qrcode && window.Html5QrcodeSupportedFormats) {
+          try {
+            await startHtml5Scanner_();
+            state.scannerEngine = 'html5';
+            return;
+          } catch (error) {
+            html5Error = error;
+          }
+        }
 
         if (window.BarcodeDetector && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
           try {
@@ -1035,36 +1046,9 @@
           }
         }
 
-        if (window.Html5Qrcode && window.Html5QrcodeSupportedFormats) {
+        if (!preferHtml5 && window.Html5Qrcode && window.Html5QrcodeSupportedFormats) {
           try {
-            state.scannerInstance = new Html5Qrcode('reader');
-
-            await state.scannerInstance.start(
-              {
-                facingMode: { ideal: 'environment' },
-                width: { ideal: 1280 },
-                height: { ideal: 720 },
-                frameRate: { ideal: 30, max: 30 }
-              },
-              {
-                fps: 28,
-                qrbox: { width: 226, height: 84 },
-                aspectRatio: 1.6,
-                disableFlip: true,
-                rememberLastUsedCamera: true,
-                experimentalFeatures: {
-                  useBarCodeDetectorIfSupported: true
-                },
-                formatsToSupport: [
-                  Html5QrcodeSupportedFormats.EAN_13,
-                  Html5QrcodeSupportedFormats.EAN_8,
-                  Html5QrcodeSupportedFormats.UPC_A,
-                  Html5QrcodeSupportedFormats.UPC_E
-                ]
-              },
-              onScanSuccess
-            );
-
+            await startHtml5Scanner_();
             state.scannerEngine = 'html5';
             return;
           } catch (error) {
@@ -1079,6 +1063,49 @@
         }
 
         throw nativeError || html5Error || new Error('找不到可用的掃描引擎。');
+      }
+
+      async function startHtml5Scanner_() {
+        state.scannerInstance = new Html5Qrcode('reader');
+
+        await state.scannerInstance.start(
+          {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            frameRate: { ideal: 30, max: 30 }
+          },
+          {
+            fps: 30,
+            qrbox: { width: 226, height: 84 },
+            aspectRatio: 1.6,
+            disableFlip: true,
+            rememberLastUsedCamera: true,
+            focusMode: 'continuous',
+            willReadFrequently: true,
+            advanced: [{ zoom: 2.4 }],
+            experimentalFeatures: {
+              useBarCodeDetectorIfSupported: false
+            },
+            formatsToSupport: [
+              Html5QrcodeSupportedFormats.EAN_13,
+              Html5QrcodeSupportedFormats.EAN_8,
+              Html5QrcodeSupportedFormats.UPC_A,
+              Html5QrcodeSupportedFormats.UPC_E
+            ]
+          },
+          onScanSuccess
+        );
+      }
+
+      function prefersHtml5Scanner_() {
+        const ua = navigator.userAgent || '';
+        const platform = navigator.platform || '';
+        const maxTouchPoints = Number(navigator.maxTouchPoints || 0);
+        const isAppleMobile =
+          /iPhone|iPad|iPod/i.test(ua) || (platform === 'MacIntel' && maxTouchPoints > 1);
+
+        return isAppleMobile;
       }
 
       async function startNativeScanner_() {
