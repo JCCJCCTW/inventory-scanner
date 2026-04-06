@@ -1073,25 +1073,24 @@
             facingMode: { ideal: 'environment' },
             width: { ideal: 1280 },
             height: { ideal: 720 },
-            frameRate: { ideal: 30, max: 30 }
+            frameRate: { ideal: 30, max: 30 },
+            advanced: [{ focusMode: 'continuous' }, { zoom: 2.2 }]
           },
           {
             fps: 30,
-            qrbox: { width: 226, height: 84 },
+            qrbox: function (viewfinderWidth) {
+              const width = Math.min(viewfinderWidth * 0.62, 240);
+              const height = Math.round(width * 0.38);
+              return { width: width, height: height };
+            },
             aspectRatio: 1.6,
             disableFlip: true,
             rememberLastUsedCamera: true,
-            focusMode: 'continuous',
-            willReadFrequently: true,
-            advanced: [{ zoom: 2.4 }],
             experimentalFeatures: {
               useBarCodeDetectorIfSupported: false
             },
             formatsToSupport: [
-              Html5QrcodeSupportedFormats.EAN_13,
-              Html5QrcodeSupportedFormats.EAN_8,
-              Html5QrcodeSupportedFormats.UPC_A,
-              Html5QrcodeSupportedFormats.UPC_E
+              Html5QrcodeSupportedFormats.EAN_13
             ]
           },
           onScanSuccess
@@ -1122,7 +1121,7 @@
         video.style.borderRadius = '24px';
         readerRoot.appendChild(video);
 
-        let formats = ['ean_13', 'ean_8', 'upc_a', 'upc_e'];
+        let formats = ['ean_13'];
 
         if (typeof BarcodeDetector.getSupportedFormats === 'function') {
           const supportedFormats = await BarcodeDetector.getSupportedFormats();
