@@ -507,6 +507,7 @@
         scannerEngine: '',
         scannerInstance: null,
         audioContext: null,
+        audioGainNode: null,
         zxingReader: null,
         zxingControls: null,
         lastScannedCode: '',
@@ -768,13 +769,12 @@
         state.saving = true;
         syncActionButtons();
         dom.saveButton.textContent = '儲存中...';
-        ensureAudioReady_();
+        unlockFeedback_();
 
         try {
           const barcodeChanged =
             Boolean(state.original.barcode) && state.current.barcode !== state.original.barcode;
 
-          const previousBarcode = state.original.barcode;
           const result = await jsonpRequest('saveItem', {
             rowNumber: barcodeChanged ? '' : state.original.rowNumber || '',
             barcode: state.current.barcode,
@@ -806,6 +806,7 @@
         const url = new URL(GAS_WEB_APP_URL);
         url.searchParams.set('action', action);
         url.searchParams.set('callback', callbackName);
+        url.searchParams.set('_ts', String(Date.now()));
 
         Object.entries(params || {}).forEach(function (entry) {
           const key = entry[0];
@@ -943,20 +944,28 @@
             }
 
             await state.scannerInstance.start(
-              { facingMode: { ideal: 'environment' } },
               {
-                fps: 22,
-                qrbox: { width: 240, height: 150 },
+                facingMode: { ideal: 'environment' },
+                width: { ideal: 960 },
+                height: { ideal: 540 },
+                frameRate: { ideal: 30, max: 30 }
+              },
+              {
+                fps: 28,
+                qrbox: { width: 280, height: 132 },
                 aspectRatio: 1.6,
                 disableFlip: true,
                 rememberLastUsedCamera: true,
+                experimentalFeatures: {
+                  useBarCodeDetectorIfSupported: true
+                },
                 formatsToSupport: [
-                  Html5QrcodeSupportedFormats.EAN_13,
-                  Html5QrcodeSupportedFormats.EAN_8,
                   Html5QrcodeSupportedFormats.CODE_128,
-                  Html5QrcodeSupportedFormats.CODE_39,
+                  Html5QrcodeSupportedFormats.EAN_13,
                   Html5QrcodeSupportedFormats.UPC_A,
-                  Html5QrcodeSupportedFormats.UPC_E
+                  Html5QrcodeSupportedFormats.EAN_8,
+                  Html5QrcodeSupportedFormats.UPC_E,
+                  Html5QrcodeSupportedFormats.CODE_39
                 ]
               },
               onScanSuccess
@@ -999,8 +1008,9 @@
           {
             video: {
               facingMode: { ideal: 'environment' },
-              width: { ideal: 1280 },
-              height: { ideal: 720 }
+              width: { ideal: 960 },
+              height: { ideal: 540 },
+              frameRate: { ideal: 30, max: 30 }
             }
           },
           video,
@@ -1028,7 +1038,7 @@
           return;
         }
 
-        if (state.lastScannedCode === barcode && now - state.lastScanAt < 1500) {
+        if (state.lastScannedCode === barcode && now - state.lastScanAt < 900) {
           return;
         }
 
@@ -1056,13 +1066,20 @@
             state.audioContext.resume();
           }
 
+          if (!state.audioGainNode) {
+            state.audioGainNode = state.audioContext.createGain();
+            state.audioGainNode.gain.value = 1.8;
+            state.audioGainNode.connect(state.audioContext.destination);
+          }
+
           const buffer = state.audioContext.createBuffer(1, 1, 22050);
           const source = state.audioContext.createBufferSource();
           source.buffer = buffer;
-          source.connect(state.audioContext.destination);
+          source.connect(state.audioGainNode || state.audioContext.destination);
           source.start(0);
         } catch (error) {
           state.audioContext = null;
+          state.audioGainNode = null;
         }
       }
 
@@ -1095,17 +1112,17 @@
 
         const tones = {
           scanSuccess: [
-            [880, 0.05, 'sine'],
-            [1174, 0.08, 'sine']
+            [988, 0.06, 'triangle'],
+            [1396, 0.1, 'triangle']
           ],
           saveSuccess: [
-            [784, 0.06, 'triangle'],
-            [988, 0.08, 'triangle'],
-            [1318, 0.1, 'triangle']
+            [880, 0.08, 'triangle'],
+            [1174, 0.11, 'triangle'],
+            [1567, 0.14, 'triangle']
           ],
           saveError: [
-            [320, 0.12, 'sawtooth'],
-            [220, 0.14, 'sawtooth']
+            [280, 0.16, 'sawtooth'],
+            [196, 0.18, 'sawtooth']
           ]
         };
 
@@ -1124,16 +1141,16 @@
           const type = tone[2];
           const oscillator = context.createOscillator();
           const gainNode = context.createGain();
-          const noteStart = startAt + index * 0.09;
+          const noteStart = startAt + index * 0.1;
 
           oscillator.type = type;
           oscillator.frequency.setValueAtTime(frequency, noteStart);
           gainNode.gain.setValueAtTime(0.0001, noteStart);
-          gainNode.gain.exponentialRampToValueAtTime(0.08, noteStart + 0.01);
+          gainNode.gain.exponentialRampToValueAtTime(0.2, noteStart + 0.012);
           gainNode.gain.exponentialRampToValueAtTime(0.0001, noteStart + duration);
 
           oscillator.connect(gainNode);
-          gainNode.connect(context.destination);
+          gainNode.connect(state.audioGainNode || context.destination);
           oscillator.start(noteStart);
           oscillator.stop(noteStart + duration + 0.02);
         });
