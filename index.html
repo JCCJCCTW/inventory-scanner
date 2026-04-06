@@ -384,8 +384,8 @@
         position: absolute;
         left: 50%;
         top: 50%;
-        width: min(68%, 248px);
-        height: 76px;
+        width: min(62%, 226px);
+        height: 84px;
         transform: translate(-50%, -50%);
         border-radius: 20px;
         box-shadow:
@@ -1042,13 +1042,13 @@
             await state.scannerInstance.start(
               {
                 facingMode: { ideal: 'environment' },
-                width: { ideal: 960 },
-                height: { ideal: 540 },
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
                 frameRate: { ideal: 30, max: 30 }
               },
               {
                 fps: 28,
-                qrbox: { width: 248, height: 76 },
+                qrbox: { width: 226, height: 84 },
                 aspectRatio: 1.6,
                 disableFlip: true,
                 rememberLastUsedCamera: true,
@@ -1056,10 +1056,9 @@
                   useBarCodeDetectorIfSupported: true
                 },
                 formatsToSupport: [
-                  Html5QrcodeSupportedFormats.CODE_128,
                   Html5QrcodeSupportedFormats.EAN_13,
-                  Html5QrcodeSupportedFormats.UPC_A,
                   Html5QrcodeSupportedFormats.EAN_8,
+                  Html5QrcodeSupportedFormats.UPC_A,
                   Html5QrcodeSupportedFormats.UPC_E
                 ]
               },
@@ -1096,7 +1095,7 @@
         video.style.borderRadius = '24px';
         readerRoot.appendChild(video);
 
-        let formats = ['code_128', 'ean_13', 'upc_a', 'ean_8', 'upc_e'];
+        let formats = ['ean_13', 'ean_8', 'upc_a', 'upc_e'];
 
         if (typeof BarcodeDetector.getSupportedFormats === 'function') {
           const supportedFormats = await BarcodeDetector.getSupportedFormats();
@@ -1114,8 +1113,8 @@
           audio: false,
           video: {
             facingMode: { ideal: 'environment' },
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
             frameRate: { ideal: 30, max: 30 }
           }
         });
@@ -1152,8 +1151,8 @@
             return;
           }
 
-          const cropWidth = Math.round(videoWidth * 0.64);
-          const cropHeight = Math.round(videoHeight * 0.18);
+          const cropWidth = Math.round(videoWidth * 0.72);
+          const cropHeight = Math.round(videoHeight * 0.24);
           const cropX = Math.round((videoWidth - cropWidth) / 2);
           const cropY = Math.round((videoHeight - cropHeight) / 2);
 
