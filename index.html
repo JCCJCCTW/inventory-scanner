@@ -959,9 +959,14 @@
       }
 
       async function stopScanner() {
+        const readerRoot = document.getElementById('reader');
+
         if (!state.scannerRunning && !state.scannerEngine) {
           dom.scannerShell.classList.remove('is-active');
           dom.scannerNote.textContent = '掃描器已關閉。';
+          if (readerRoot) {
+            readerRoot.innerHTML = '';
+          }
           return;
         }
 
@@ -984,24 +989,35 @@
             if (typeof state.scannerInstance.clear === 'function') {
               await state.scannerInstance.clear();
             }
-          } else if (state.scannerEngine === 'zxing' && state.zxingControls) {
-            state.zxingControls.stop();
+          } else if (state.scannerEngine === 'zxing') {
+            if (state.zxingControls) {
+              state.zxingControls.stop();
+            }
+            if (state.zxingReader && typeof state.zxingReader.reset === 'function') {
+              state.zxingReader.reset();
+            }
           }
         } catch (error) {
           // 忽略快速關閉時的 stop 例外。
         } finally {
           state.scannerRunning = false;
           state.scannerEngine = '';
+          state.scannerInstance = null;
+          state.nativeDetector = null;
           state.nativeStream = null;
           state.nativeVideo = null;
           state.nativeCanvas = null;
           state.nativeContext = null;
           state.nativeDetecting = false;
           state.nativeScanFrame = 0;
+          state.zxingReader = null;
           state.zxingControls = null;
           state.scannerHandlingResult = false;
           dom.scannerShell.classList.remove('is-active');
           dom.scannerNote.textContent = '掃描器已關閉。';
+          if (readerRoot) {
+            readerRoot.innerHTML = '';
+          }
         }
       }
 
@@ -1021,9 +1037,7 @@
 
         if (window.Html5Qrcode && window.Html5QrcodeSupportedFormats) {
           try {
-            if (!state.scannerInstance) {
-              state.scannerInstance = new Html5Qrcode('reader');
-            }
+            state.scannerInstance = new Html5Qrcode('reader');
 
             await state.scannerInstance.start(
               {
@@ -1195,9 +1209,7 @@
         video.style.borderRadius = '24px';
         readerRoot.appendChild(video);
 
-        if (!state.zxingReader) {
-          state.zxingReader = new ZXingBrowser.BrowserMultiFormatReader();
-        }
+        state.zxingReader = new ZXingBrowser.BrowserMultiFormatReader();
 
         state.zxingControls = await state.zxingReader.decodeFromConstraints(
           {
