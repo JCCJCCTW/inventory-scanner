@@ -380,6 +380,48 @@
         border-radius: 24px;
       }
 
+      .scanner-guide {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: min(82%, 320px);
+        height: 112px;
+        transform: translate(-50%, -50%);
+        border-radius: 20px;
+        box-shadow:
+          inset 0 0 0 2px rgba(255, 248, 239, 0.78),
+          0 0 0 999px rgba(14, 20, 27, 0.14);
+        pointer-events: none;
+      }
+
+      .scanner-guide::before,
+      .scanner-guide::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: 20px;
+        pointer-events: none;
+      }
+
+      .scanner-guide::before {
+        border: 3px solid rgba(249, 168, 112, 0.88);
+        mask:
+          linear-gradient(#000 0 0) content-box,
+          linear-gradient(#000 0 0);
+        -webkit-mask:
+          linear-gradient(#000 0 0) content-box,
+          linear-gradient(#000 0 0);
+        padding: 12px;
+        mask-composite: exclude;
+        -webkit-mask-composite: xor;
+      }
+
+      .scanner-guide::after {
+        inset: 10px 14px;
+        border-top: 2px solid rgba(255, 248, 239, 0.62);
+        border-bottom: 2px solid rgba(255, 248, 239, 0.62);
+      }
+
       .scanner-placeholder {
         position: absolute;
         inset: 0;
@@ -484,7 +526,8 @@
 
         <div id="scannerShell" class="scanner-shell">
           <div id="reader"></div>
-          <div class="scanner-placeholder">啟動後請將條碼置中。辨識成功會自動關閉掃描視窗。</div>
+          <div class="scanner-guide" aria-hidden="true"></div>
+          <div class="scanner-placeholder">請將條碼主動對齊中央框線。辨識成功會自動關閉掃描視窗。</div>
         </div>
 
         <p id="scannerNote" class="scanner-note">正在準備掃描器...</p>
@@ -509,6 +552,8 @@
         nativeDetector: null,
         nativeStream: null,
         nativeVideo: null,
+        nativeCanvas: null,
+        nativeContext: null,
         nativeDetecting: false,
         nativeScanFrame: 0,
         audioContext: null,
@@ -949,6 +994,8 @@
           state.scannerEngine = '';
           state.nativeStream = null;
           state.nativeVideo = null;
+          state.nativeCanvas = null;
+          state.nativeContext = null;
           state.nativeDetecting = false;
           state.nativeScanFrame = 0;
           state.zxingControls = null;
@@ -987,7 +1034,7 @@
               },
               {
                 fps: 28,
-                qrbox: { width: 300, height: 124 },
+                qrbox: { width: 320, height: 112 },
                 aspectRatio: 1.6,
                 disableFlip: true,
                 rememberLastUsedCamera: true,
@@ -1061,6 +1108,11 @@
 
         video.srcObject = state.nativeStream;
         state.nativeVideo = video;
+        state.nativeCanvas = document.createElement('canvas');
+        state.nativeContext = state.nativeCanvas.getContext('2d', {
+          alpha: false,
+          willReadFrequently: false
+        });
 
         await video.play();
 
@@ -1079,9 +1131,35 @@
             return;
           }
 
+          const videoWidth = state.nativeVideo.videoWidth || 0;
+          const videoHeight = state.nativeVideo.videoHeight || 0;
+
+          if (!videoWidth || !videoHeight || !state.nativeCanvas || !state.nativeContext) {
+            return;
+          }
+
+          const cropWidth = Math.round(videoWidth * 0.82);
+          const cropHeight = Math.round(videoHeight * 0.28);
+          const cropX = Math.round((videoWidth - cropWidth) / 2);
+          const cropY = Math.round((videoHeight - cropHeight) / 2);
+
+          state.nativeCanvas.width = cropWidth;
+          state.nativeCanvas.height = cropHeight;
+          state.nativeContext.drawImage(
+            state.nativeVideo,
+            cropX,
+            cropY,
+            cropWidth,
+            cropHeight,
+            0,
+            0,
+            cropWidth,
+            cropHeight
+          );
+
           state.nativeDetecting = true;
           state.nativeDetector
-            .detect(state.nativeVideo)
+            .detect(state.nativeCanvas)
             .then(function (codes) {
               if (!codes || !codes.length) {
                 return;
@@ -1185,7 +1263,7 @@
 
           if (!state.audioGainNode) {
             state.audioGainNode = state.audioContext.createGain();
-            state.audioGainNode.gain.value = 2.6;
+            state.audioGainNode.gain.value = 5.2;
             state.audioGainNode.connect(state.audioContext.destination);
           }
 
@@ -1263,7 +1341,7 @@
           oscillator.type = type;
           oscillator.frequency.setValueAtTime(frequency, noteStart);
           gainNode.gain.setValueAtTime(0.0001, noteStart);
-          gainNode.gain.exponentialRampToValueAtTime(0.28, noteStart + 0.012);
+          gainNode.gain.exponentialRampToValueAtTime(0.42, noteStart + 0.012);
           gainNode.gain.exponentialRampToValueAtTime(0.0001, noteStart + duration);
 
           oscillator.connect(gainNode);
